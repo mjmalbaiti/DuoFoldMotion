@@ -196,11 +196,12 @@ class MainActivity : AppCompatActivity() {
         return panel
     }
 
-    private fun button(textValue: String): Button {
+    private fun button(textValue: String, action: () -> Unit): Button {
         return Button(this).apply {
             text = textValue
             minWidth = 0
             minimumWidth = 0
+            setOnClickListener { action() }
         }
     }
 
