@@ -1,83 +1,191 @@
 package com.duofoldmotion.app
 
 import android.animation.ValueAnimator
+import android.content.res.Configuration
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
-import android.view.ViewOutlineProvider
-import android.view.animation.DecelerateInterpolator
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var card: FrameLayout
-    private lateinit var title: TextView
-    private lateinit var subtitle: TextView
+    private lateinit var root: FrameLayout
+    private lateinit var leftPanel: FrameLayout
+    private lateinit var centerPanel: FrameLayout
+    private lateinit var rightPanel: FrameLayout
+    private lateinit var stateLabel: TextView
 
-    private var currentScale = 1f
-    private var currentRadius = 24f
-    private var currentAlpha = 1f
+    private var progress = 0f
+    private var lastWidth = 0
+    private var autoTracking = true
+    private var animator: ValueAnimator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val root = FrameLayout(this).apply {
-            setBackgroundColor(0xFF000000.toInt())
+        root = FrameLayout(this).apply {
+            setBackgroundColor(Color.BLACK)
+            clipChildren = false
+            clipToPadding = false
         }
 
-        card = FrameLayout(this).apply {
-            setBackgroundColor(0xFF161616.toInt())
-            elevation = 20f
-            clipToOutline = true
-            outlineProvider = RoundedOutlineProvider(currentRadius)
+        val stage = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            clipChildren = false
+            clipToPadding = false
+        }
+
+        leftPanel = createPanel("01", "CONTINUITY", "Apps remain visually connected")
+        centerPanel = createPanel("02", "DUO FOLD", "Active screen")
+        rightPanel = createPanel("03", "MOTION", "Adaptive folding interface")
+
+        stage.addView(leftPanel, panelParams())
+        stage.addView(centerPanel, panelParams())
+        stage.addView(rightPanel, panelParams())
+
+        root.addView(
+            stage,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            ).apply {
+                setMargins(30, 38, 30, 120)
+            }
+        )
+
+        val controls = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(12, 8, 12, 18)
+        }
+
+        stateLabel = TextView(this).apply {
+            text = "OPEN"
+            textSize = 13f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            setPadding(18, 0, 18, 0)
+        }
+
+        controls.addView(button("C") {
+            autoTracking = false
+            animateTo(1f, "CLOSED")
+        })
+
+        controls.addView(button("T") {
+            autoTracking = false
+            animateTo(0.52f, "TRANSITION")
+        })
+
+        controls.addView(button("O") {
+            autoTracking = false
+            animateTo(0f, "OPEN")
+        })
+
+        controls.addView(button("A") {
+            autoDemo()
+        })
+
+        controls.addView(stateLabel)
+
+        root.addView(
+            controls,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            )
+        )
+
+        setContentView(root)
+
+        root.post {
+            configurePivots()
+            reactToWidth(root.width)
+        }
+
+        root.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+            val newWidth = right - left
+            val oldWidth = oldRight - oldLeft
+
+            if (newWidth > 0 && abs(newWidth - oldWidth) > 20) {
+                configurePivots()
+
+                if (autoTracking) {
+                    reactToWidth(newWidth)
+                }
+            }
+        }
+    }
+
+    private fun panelParams(): LinearLayout.LayoutParams {
+        return LinearLayout.LayoutParams(
+            0,
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            1f
+        ).apply {
+            setMargins(6, 0, 6, 0)
+        }
+    }
+
+    private fun createPanel(
+        number: String,
+        heading: String,
+        description: String
+    ): FrameLayout {
+
+        val panel = FrameLayout(this).apply {
+            background = GradientDrawable().apply {
+                setColor(Color.rgb(22, 22, 24))
+                cornerRadius = 34f
+            }
+
+            elevation = 16f
+            cameraDistance = resources.displayMetrics.density * 12000f
+            clipChildren = false
         }
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setPadding(48, 48, 48, 48)
+            setPadding(30, 30, 30, 30)
         }
 
-        title = TextView(this).apply {
-            text = "Duo Fold Motion"
-            textSize = 30f
-            setTextColor(0xFFFFFFFF.toInt())
+        val numberView = TextView(this).apply {
+            text = number
+            textSize = 14f
+            setTextColor(Color.rgb(120, 120, 125))
             gravity = Gravity.CENTER
         }
 
-        subtitle = TextView(this).apply {
-            text = "TriFold continuity prototype"
-            textSize = 16f
-            setTextColor(0xFFB8B8B8.toInt())
+        val title = TextView(this).apply {
+            text = heading
+            textSize = 24f
+            setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
         }
 
-        val controls = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+        val body = TextView(this).apply {
+            text = description
+            textSize = 14f
+            setTextColor(Color.rgb(175, 175, 180))
             gravity = Gravity.CENTER
         }
 
-        fun makeButton(label: String, action: () -> Unit): Button {
-            return Button(this).apply {
-                text = label
-                setOnClickListener { action() }
-            }
-        }
-
-        controls.addView(makeButton("C") { animateTo(0.72f, 56f, 0.9f, "Closed") })
-        controls.addView(makeButton("T") { animateTo(0.86f, 40f, 0.95f, "Transition") })
-        controls.addView(makeButton("O") { animateTo(1.0f, 24f, 1.0f, "Open") })
-        controls.addView(makeButton("A") { autoSequence() })
-
+        content.addView(numberView)
         content.addView(title)
-        content.addView(subtitle)
-        content.addView(controls)
+        content.addView(body)
 
-        card.addView(
+        panel.addView(
             content,
             FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -85,65 +193,124 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
-        val margin = 48
-        root.addView(
-            card,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            ).apply {
-                setMargins(margin, margin * 2, margin, margin * 2)
-            }
-        )
-
-        setContentView(root)
+        return panel
     }
 
-    private fun animateTo(
-        targetScale: Float,
-        targetRadius: Float,
-        targetAlpha: Float,
-        state: String
-    ) {
-        val startScale = currentScale
-        val startRadius = currentRadius
-        val startAlpha = currentAlpha
+    private fun button(textValue: String): Button {
+        return Button(this).apply {
+            text = textValue
+            minWidth = 0
+            minimumWidth = 0
+        }
+    }
 
-        ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 650
-            interpolator = DecelerateInterpolator()
-            addUpdateListener { animator ->
-                val p = animator.animatedValue as Float
+    private fun configurePivots() {
+        leftPanel.pivotX = leftPanel.width.toFloat()
+        leftPanel.pivotY = leftPanel.height / 2f
 
-                currentScale = startScale + (targetScale - startScale) * p
-                currentRadius = startRadius + (targetRadius - startRadius) * p
-                currentAlpha = startAlpha + (targetAlpha - startAlpha) * p
+        centerPanel.pivotX = centerPanel.width / 2f
+        centerPanel.pivotY = centerPanel.height / 2f
 
-                card.scaleX = currentScale
-                card.scaleY = currentScale
-                card.alpha = currentAlpha
-                card.outlineProvider = RoundedOutlineProvider(currentRadius)
-                card.invalidateOutline()
+        rightPanel.pivotX = 0f
+        rightPanel.pivotY = rightPanel.height / 2f
+    }
+
+    private fun animateTo(target: Float, label: String) {
+        animator?.cancel()
+
+        val start = progress
+
+        animator = ValueAnimator.ofFloat(start, target).apply {
+            duration = 760
+            interpolator = AccelerateDecelerateInterpolator()
+
+            addUpdateListener {
+                applyFoldProgress(it.animatedValue as Float)
             }
+
             start()
         }
 
-        subtitle.text = "$state mode"
+        stateLabel.text = label
     }
 
-    private fun autoSequence() {
-        animateTo(0.72f, 56f, 0.9f, "Closed")
-        card.postDelayed({
-            animateTo(0.86f, 40f, 0.95f, "Transition")
-        }, 800)
-        card.postDelayed({
-            animateTo(1.0f, 24f, 1.0f, "Open")
-        }, 1600)
-    }
-}
+    private fun applyFoldProgress(value: Float) {
+        progress = value.coerceIn(0f, 1f)
 
-class RoundedOutlineProvider(private val radius: Float) : ViewOutlineProvider() {
-    override fun getOutline(view: View, outline: android.graphics.Outline) {
-        outline.setRoundRect(0, 0, view.width, view.height, radius)
+        val sideAngle = 82f * progress
+
+        leftPanel.rotationY = -sideAngle
+        rightPanel.rotationY = sideAngle
+
+        leftPanel.translationX = leftPanel.width * 0.74f * progress
+        rightPanel.translationX = -rightPanel.width * 0.74f * progress
+
+        leftPanel.alpha = 1f - (0.84f * progress)
+        rightPanel.alpha = 1f - (0.84f * progress)
+
+        leftPanel.scaleX = 1f - (0.17f * progress)
+        rightPanel.scaleX = 1f - (0.17f * progress)
+
+        centerPanel.scaleX = 1f + (0.16f * progress)
+        centerPanel.scaleY = 1f - (0.025f * progress)
+
+        centerPanel.translationZ = 30f * progress
+
+        val shade = (22 + 15 * progress).toInt()
+
+        centerPanel.background = GradientDrawable().apply {
+            setColor(Color.rgb(shade, shade, shade + 2))
+            cornerRadius = 34f + (30f * progress)
+        }
+    }
+
+    private fun reactToWidth(widthPx: Int) {
+        if (widthPx <= 0) return
+
+        if (lastWidth != 0 && abs(widthPx - lastWidth) < 20) return
+        lastWidth = widthPx
+
+        val widthDp = widthPx / resources.displayMetrics.density
+
+        when {
+            widthDp >= 900f -> animateTo(0f, "AUTO • OPEN")
+            widthDp >= 600f -> animateTo(0.52f, "AUTO • HALF")
+            else -> animateTo(1f, "AUTO • CLOSED")
+        }
+    }
+
+    private fun autoDemo() {
+        autoTracking = false
+
+        animateTo(0f, "DEMO • OPEN")
+
+        root.postDelayed({
+            animateTo(0.52f, "DEMO • FOLDING")
+        }, 900)
+
+        root.postDelayed({
+            animateTo(1f, "DEMO • CLOSED")
+        }, 1800)
+
+        root.postDelayed({
+            animateTo(0.52f, "DEMO • OPENING")
+        }, 2900)
+
+        root.postDelayed({
+            animateTo(0f, "AUTO • OPEN")
+            autoTracking = true
+        }, 3900)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+        root.postDelayed({
+            configurePivots()
+
+            if (autoTracking) {
+                reactToWidth(root.width)
+            }
+        }, 120)
     }
 }
