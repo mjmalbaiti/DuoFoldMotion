@@ -4,6 +4,7 @@ import android.animation.ValueAnimator
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.view.ViewOutlineProvider
 import android.view.animation.DecelerateInterpolator
 import android.widget.Button
 import android.widget.FrameLayout
@@ -141,7 +142,7 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-class RoundedOutlineProvider(private val radius: Float) : View.OutlineProvider() {
+class RoundedOutlineProvider(private val radius: Float) : ViewOutlineProvider() {
     override fun getOutline(view: View, outline: android.graphics.Outline) {
         outline.setRoundRect(0, 0, view.width, view.height, radius)
     }
