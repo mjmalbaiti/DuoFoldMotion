@@ -239,40 +239,70 @@ class MainActivity : AppCompatActivity() {
         progress = value.coerceIn(0f, 1f)
         configurePivots()
 
-        // Sequential fold: left -> right
         val phase1 = (progress / 0.5f).coerceIn(0f, 1f)
         val phase2 = ((progress - 0.5f) / 0.5f).coerceIn(0f, 1f)
 
-        leftPanel.cameraDistance = 14000f
-        centerPanel.cameraDistance = 14000f
-        rightPanel.cameraDistance = 14000f
+        val fold1Angle = 86f * phase1
+        val fold2Angle = 86f * phase2
 
-        // Stage 1: left panel folds onto center
-        leftPanel.rotationY = 88f * phase1
-        leftPanel.translationX = leftPanel.width * 0.50f * phase1
-        leftPanel.translationZ = 8f * phase1
-        leftPanel.alpha = 1f
+        val panelWidth = centerPanel.width.toFloat()
 
-        // Center remains mostly fixed during first fold
+        leftPanel.cameraDistance = 16000f
+        centerPanel.cameraDistance = 16000f
+        rightPanel.cameraDistance = 16000f
+
+        // Stage 1: LEFT folds onto CENTER
+        leftPanel.rotationY = fold1Angle
+        leftPanel.translationX = panelWidth * 0.50f * phase1
+        leftPanel.translationZ = 20f * phase1
+
         centerPanel.rotationY = 0f
         centerPanel.translationX = 0f
-        centerPanel.translationZ = 12f * phase1
+        centerPanel.translationZ = 10f
 
-        // Stage 2: folded left+center group moves/folds toward right
-        val groupShift = centerPanel.width * 0.42f * phase2
-        centerPanel.translationX = groupShift
-        centerPanel.rotationY = 18f * phase2
-        centerPanel.translationZ = 18f * phase2
+        rightPanel.rotationY = 0f
+        rightPanel.translationX = 0f
+        rightPanel.translationZ = 0f
 
-        leftPanel.translationX =
-            leftPanel.width * 0.50f * phase1 + groupShift
-        leftPanel.rotationY =
-            88f * phase1 + 18f * phase2
+        // Stage 2: LEFT + CENTER behave like one folded stack moving to RIGHT
+        if (phase2 > 0f) {
+            val stackShift = panelWidth * 0.92f * phase2
 
-        // Right panel is final destination / closing face
-        rightPanel.rotationY = -82f * phase2
-        rightPanel.translationX = -rightPanel.width * 0.42f * phase2
-        rightPanel.translationZ = 6f * phase2
+            leftPanel.rotationY = fold1Angle - (fold2Angle * 0.10f)
+            centerPanel.rotationY = fold2Angle
+
+            leftPanel.translationX =
+                panelWidth * 0.50f + stackShift
+            centerPanel.translationX = stackShift
+
+            leftPanel.translationZ = 30f + 25f * phase2
+            centerPanel.translationZ = 25f + 20f * phase2
+
+            rightPanel.rotationY = -fold2Angle
+            rightPanel.translationX = -panelWidth * 0.08f * phase2
+            rightPanel.translationZ = 5f
+        }
+
+        // Final closed alignment: visually stack all three panels
+        if (progress > 0.94f) {
+            val end = ((progress - 0.94f) / 0.06f).coerceIn(0f, 1f)
+
+            leftPanel.rotationY *= (1f - end)
+            centerPanel.rotationY *= (1f - end)
+            rightPanel.rotationY *= (1f - end)
+
+            val finalX = panelWidth * 0.92f
+
+            leftPanel.translationX =
+                leftPanel.translationX + (finalX - leftPanel.translationX) * end
+            centerPanel.translationX =
+                centerPanel.translationX + (finalX - centerPanel.translationX) * end
+            rightPanel.translationX =
+                rightPanel.translationX + (0f - rightPanel.translationX) * end
+        }
+
+        leftPanel.alpha = 1f
+        centerPanel.alpha = 1f
         rightPanel.alpha = 1f
 
         leftPanel.scaleX = 1f
@@ -281,12 +311,6 @@ class MainActivity : AppCompatActivity() {
         centerPanel.scaleY = 1f
         rightPanel.scaleX = 1f
         rightPanel.scaleY = 1f
-
-        val shade = (22 + 8 * progress).toInt()
-        centerPanel.background = GradientDrawable().apply {
-            setColor(Color.rgb(shade, shade, shade + 2))
-            cornerRadius = 34f
-        }
     }
 
     private fun reactToWidth(widthPx: Int) {
