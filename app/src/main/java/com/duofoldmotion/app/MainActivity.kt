@@ -239,34 +239,50 @@ class MainActivity : AppCompatActivity() {
         progress = value.coerceIn(0f, 1f)
         configurePivots()
 
-        val angle = 88f * progress
+        // Sequential fold: left -> right
+        val phase1 = (progress / 0.5f).coerceIn(0f, 1f)
+        val phase2 = ((progress - 0.5f) / 0.5f).coerceIn(0f, 1f)
 
-        leftPanel.cameraDistance = 12000f
-        centerPanel.cameraDistance = 12000f
-        rightPanel.cameraDistance = 12000f
+        leftPanel.cameraDistance = 14000f
+        centerPanel.cameraDistance = 14000f
+        rightPanel.cameraDistance = 14000f
 
-        leftPanel.rotationY = angle
-        rightPanel.rotationY = -angle
-
-        leftPanel.translationX = leftPanel.width * 0.50f * progress
-        rightPanel.translationX = -rightPanel.width * 0.50f * progress
-
+        // Stage 1: left panel folds onto center
+        leftPanel.rotationY = 88f * phase1
+        leftPanel.translationX = leftPanel.width * 0.50f * phase1
+        leftPanel.translationZ = 8f * phase1
         leftPanel.alpha = 1f
+
+        // Center remains mostly fixed during first fold
+        centerPanel.rotationY = 0f
+        centerPanel.translationX = 0f
+        centerPanel.translationZ = 12f * phase1
+
+        // Stage 2: folded left+center group moves/folds toward right
+        val groupShift = centerPanel.width * 0.42f * phase2
+        centerPanel.translationX = groupShift
+        centerPanel.rotationY = 18f * phase2
+        centerPanel.translationZ = 18f * phase2
+
+        leftPanel.translationX =
+            leftPanel.width * 0.50f * phase1 + groupShift
+        leftPanel.rotationY =
+            88f * phase1 + 18f * phase2
+
+        // Right panel is final destination / closing face
+        rightPanel.rotationY = -82f * phase2
+        rightPanel.translationX = -rightPanel.width * 0.42f * phase2
+        rightPanel.translationZ = 6f * phase2
         rightPanel.alpha = 1f
 
         leftPanel.scaleX = 1f
         leftPanel.scaleY = 1f
+        centerPanel.scaleX = 1f
+        centerPanel.scaleY = 1f
         rightPanel.scaleX = 1f
         rightPanel.scaleY = 1f
 
-        centerPanel.scaleX = 1f
-        centerPanel.scaleY = 1f
-        centerPanel.translationZ = 12f * progress
-
-        leftPanel.translationZ = 6f * progress
-        rightPanel.translationZ = 6f * progress
-
-        val shade = (22 + 10 * progress).toInt()
+        val shade = (22 + 8 * progress).toInt()
         centerPanel.background = GradientDrawable().apply {
             setColor(Color.rgb(shade, shade, shade + 2))
             cornerRadius = 34f
