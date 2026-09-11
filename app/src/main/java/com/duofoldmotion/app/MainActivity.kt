@@ -237,31 +237,39 @@ class MainActivity : AppCompatActivity() {
 
     private fun applyFoldProgress(value: Float) {
         progress = value.coerceIn(0f, 1f)
+        configurePivots()
 
-        val sideAngle = 82f * progress
+        val angle = 88f * progress
 
-        leftPanel.rotationY = -sideAngle
-        rightPanel.rotationY = sideAngle
+        leftPanel.cameraDistance = 12000f
+        centerPanel.cameraDistance = 12000f
+        rightPanel.cameraDistance = 12000f
 
-        leftPanel.translationX = leftPanel.width * 0.74f * progress
-        rightPanel.translationX = -rightPanel.width * 0.74f * progress
+        leftPanel.rotationY = angle
+        rightPanel.rotationY = -angle
 
-        leftPanel.alpha = 1f - (0.84f * progress)
-        rightPanel.alpha = 1f - (0.84f * progress)
+        leftPanel.translationX = leftPanel.width * 0.50f * progress
+        rightPanel.translationX = -rightPanel.width * 0.50f * progress
 
-        leftPanel.scaleX = 1f - (0.17f * progress)
-        rightPanel.scaleX = 1f - (0.17f * progress)
+        leftPanel.alpha = 1f
+        rightPanel.alpha = 1f
 
-        centerPanel.scaleX = 1f + (0.16f * progress)
-        centerPanel.scaleY = 1f - (0.025f * progress)
+        leftPanel.scaleX = 1f
+        leftPanel.scaleY = 1f
+        rightPanel.scaleX = 1f
+        rightPanel.scaleY = 1f
 
-        centerPanel.translationZ = 30f * progress
+        centerPanel.scaleX = 1f
+        centerPanel.scaleY = 1f
+        centerPanel.translationZ = 12f * progress
 
-        val shade = (22 + 15 * progress).toInt()
+        leftPanel.translationZ = 6f * progress
+        rightPanel.translationZ = 6f * progress
 
+        val shade = (22 + 10 * progress).toInt()
         centerPanel.background = GradientDrawable().apply {
             setColor(Color.rgb(shade, shade, shade + 2))
-            cornerRadius = 34f + (30f * progress)
+            cornerRadius = 34f
         }
     }
 
