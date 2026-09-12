@@ -361,7 +361,7 @@ class MainActivity : AppCompatActivity() {
 
         // Nearly 180 degrees = real panel-over-panel fold.
         val firstAngle = 178f * firstFold
-        val secondAngle = -178f * secondFold
+        val secondAngle = 178f * secondFold
 
         /*
          * Small Z arcs prevent the two surfaces from
